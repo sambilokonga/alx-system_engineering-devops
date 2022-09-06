@@ -1,0 +1,3 @@
+#!/bin/bash
+alias rm="/usr/bin/rm -i"
+alias dir="/usr/bin/ls -alF | pg"
