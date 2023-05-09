@@ -1,44 +1,55 @@
 #!/usr/bin/python3
+
+import operator
 import requests
-import sys
-"""
-Module to interface with the reddit api
-"""
 
 
-def count_words(subreddit, word_list=[], after=None, all_results=[]):
-    """
-    Uses the reddit api to get a count of search terms from subreddit hot posts
-    """
-    param = {}
-    new_after = None
-    if after is not None:
-        param = {'after': after}
-    url = 'https://reddit.com/r/' + subreddit + '/hot/.json'
-    headers = {'User-Agent': "lala"}
-    try:
-        r = requests.get(url, headers=headers, params=param)
-        new_after = r.json()['data'].get('after')
-        for data in r.json()['data'].get('children'):
-            all_results.append(data['data'].get('title'))
-    except:
-        return(None)
-    if new_after is not None:
-        return(count_words(subreddit, word_list, new_after, all_results))
+def count_w(word, title):
+    l = title.split()
+    n = 0
+    for w in l:
+        if (w.upper() == word.upper()):
+            n = n + 1
+    return n
+
+
+def count_words(subreddit, word_list, nexT="", count={}):
+    if (len(count.keys()) == 0):
+        n = []
+        for key in word_list:
+            n.append(0)
+        count = dict(zip(word_list, n))
+    headers = {'User-agent': 'Alb4tr02'}
+    url = "https://www.reddit.com/r/"+subreddit+"/hot/.json"+nexT
+    req = requests.get(url, headers=headers)
+    req1 = requests.get("https://www.reddit.com/r/"+subreddit, headers=headers)
+    if (req1.status_code != 200):
+        return
+    json = req.json()
+    if ('error' in json.keys()):
+        return
+    for post in json['data']['children']:
+        title = post['data']['title']
+        for word in word_list:
+            count[word] = count[word] + count_w(word, title)
+    if (json['data']['after'] is not None):
+        return count_words(subreddit, word_list, "?after=" +
+                           json['data']['after'], count)
     else:
-        word_dict = dict.fromkeys((word_list.lower()), 0)
-        line = ""
-        for item in all_results:
-            line = item.lower()
-            for word in word_list:
-                if word in line:
-                    word_dict[word] += 1
-        for key in word_dict:
-            print("{:s}: {:d}".format(key, word_dict[key]))
-        return(all_results)
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Please pass an argument for the subreddit to search.")
-    else:
-        print(len(count_words(sys.argv[1], [x for x in sys.argv[2].split()])))
+        aux = sorted(count.items(), key=operator.itemgetter(0), reverse=False)
+        aux1 = {}
+        flag = True
+        lk = []
+        lv = []
+        for element in aux:
+            lk.append(element[0])
+            lv.append(element[1])
+        aux1 = dict(zip(lk, lv))
+        aux = sorted(aux1.items(), key=operator.itemgetter(1), reverse=True)
+        for element in aux:
+            if (element[1] != 0):
+                print("{}: {}".format(element[0], element[1]))
+                flag = False
+        if (flag):
+            print("")
+        return
